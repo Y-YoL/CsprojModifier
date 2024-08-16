@@ -26,5 +26,19 @@ namespace CsprojModifier.Editor.Internal
                 return false;
             }
         }
+
+        public static bool HasDirectoryBuildPropsIdeSupport
+        {
+            get
+            {
+                var installation = Unity.CodeEditor.CodeEditor.Editor.CurrentInstallation;
+                if (installation.Name.StartsWith("Visual Studio Code", StringComparison.Ordinal))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
     }
 }

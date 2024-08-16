@@ -75,7 +75,7 @@ namespace CsprojModifier.Editor.Features
         public override string OnGeneratedCSProject(string path, string content)
         {
             var settings = CsprojModifierSettings.Instance;
-            if (RoslynAnalyzerUnityEditorNativeSupport.HasRoslynAnalyzerIdeSupport) return content;
+            if (UnityEditorNativeSupport.HasRoslynAnalyzerIdeSupport) return content;
             if (!settings.EnableAddAnalyzerReferences) return content;
 
             var canApply = path.EndsWith("Assembly-CSharp.csproj") ||
@@ -116,7 +116,7 @@ namespace CsprojModifier.Editor.Features
         {
             var settings = CsprojModifierSettings.Instance;
 
-            if (RoslynAnalyzerUnityEditorNativeSupport.HasRoslynAnalyzerIdeSupport)
+            if (UnityEditorNativeSupport.HasRoslynAnalyzerIdeSupport)
             {
                 EditorGUILayout.HelpBox("The current code editor has Roslyn Analyzer IDE support. Roslyn Analyzers are enabled by Unity Editor.", MessageType.Info);
                 return;
@@ -137,27 +137,6 @@ namespace CsprojModifier.Editor.Features
 
                 EditorGUILayout.LabelField("The project to be added for Roslyn Analyzer references.");
                 _reorderableListAdditionalAddAnalyzerProjects.DoLayoutList();
-            }
-        }
-
-
-        private static class RoslynAnalyzerUnityEditorNativeSupport
-        {
-            public static bool HasRoslynAnalyzerIdeSupport
-            {
-                get
-                {
-
-#if UNITY_2020_2_OR_NEWER && (HAS_ROSLYN_ANALZYER_SUPPORT_RIDER || HAS_ROSLYN_ANALZYER_SUPPORT_VSCODE)
-                    // The editor extension for 'Rider' or 'Visual Studio Code' has the functionality to add Roslyn analyzer references.
-                    var codeEditorType = Unity.CodeEditor.CodeEditor.CurrentEditor.GetType();
-                    if (codeEditorType.Name == "VSCodeScriptEditor" || codeEditorType.Name == "RiderScriptEditor")
-                    {
-                        return true;
-                    }
-#endif
-                    return false;
-                }
             }
         }
     }

@@ -1,10 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using System.Xml;
 using System.Xml.Linq;
 using CsprojModifier.Editor.Internal;
 using UnityEditor;
@@ -125,7 +123,10 @@ namespace CsprojModifier.Editor.Features
 
         public override void OnGUI()
         {
+            var settings = CsprojModifierSettings.Instance;
+
             EditorGUILayout.LabelField("Additional project imports", EditorStyles.boldLabel);
+            settings.ImportDirectoryBuildProps = EditorGUILayout.ToggleLeft("Import Directory.build.props", settings.ImportDirectoryBuildProps);
             _reorderableListAdditionalImports.DoLayoutList();
             EditorGUILayout.LabelField("The project to be added for Import.");
             _reorderableListAdditionalImportsAdditionalProjects.DoLayoutList();
@@ -137,11 +138,35 @@ namespace CsprojModifier.Editor.Features
             var canApply = path.EndsWith("Assembly-CSharp.csproj") ||
                            path.EndsWith("Assembly-CSharp-Editor.csproj") ||
                            settings.AdditionalImportsAdditionalProjects.Any(x => PathEx.Equals(PathEx.GetFullPath(x), path) || x == "*");
-
-
-            if (settings.AdditionalImports.Any() && canApply)
+            if (!canApply)
             {
+                return content;
+            }
 
+            if (settings.ImportDirectoryBuildProps && !UnityEditorNativeSupport.HasDirectoryBuildPropsIdeSupport)
+            {
+                var baseDir = Path.GetDirectoryName(path);
+                var xDoc = XDocument.Parse(content);
+                var nsMsbuild = (XNamespace)"http://schemas.microsoft.com/developer/msbuild/2003";
+                var projectE = xDoc.Element(nsMsbuild + "Project");
+
+                projectE.AddFirst(new XElement(nsMsbuild + "Import",
+                    new XAttribute("Condition", @"exists('$(DirectoryBuildPropsPath)')"),
+                    new XAttribute("Project", @"$(DirectoryBuildPropsPath)")));
+
+                projectE.AddFirst(new XElement(nsMsbuild + "PropertyGroup",
+                    new XElement(nsMsbuild + "DirectoryBuildPropsPath", @"$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)'))"),
+                    new XElement(nsMsbuild + "DirectoryBuildTargetsPath", @"$([MSBuild]::GetPathOfFileAbove('Directory.Build.targets', '$(MSBuildThisFileDirectory)'))")));
+
+                projectE.Add(new XElement(nsMsbuild + "Import",
+                    new XAttribute("Condition", @"exists('$(DirectoryBuildTargetsPath)')"),
+                    new XAttribute("Project", @"$(DirectoryBuildTargetsPath)")));
+
+                content = xDoc.ToString();
+            }
+
+            if (settings.AdditionalImports.Any())
+            {
                 var baseDir = Path.GetDirectoryName(path);
                 var xDoc = XDocument.Parse(content);
                 var nsMsbuild = (XNamespace)"http://schemas.microsoft.com/developer/msbuild/2003";
@@ -174,7 +199,6 @@ namespace CsprojModifier.Editor.Features
                 }
 
                 content = xDoc.ToString();
-                return content;
             }
 
             return content;

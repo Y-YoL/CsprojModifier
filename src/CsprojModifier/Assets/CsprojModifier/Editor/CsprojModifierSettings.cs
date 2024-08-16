@@ -24,6 +24,7 @@ namespace CsprojModifier.Editor
         }
 
         #region Settings
+        public bool ImportDirectoryBuildProps;
         public List<ImportProjectItem> AdditionalImports;
         public List<string> AdditionalImportsAdditionalProjects;
 
